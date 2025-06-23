@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'webview_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -70,9 +71,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
       final url = scanData.code;
       if (url != null && (url.startsWith('http://') || url.startsWith('https://'))) {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (context.mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => WebViewPage(url: url)),
+          );
         }
       }
     });
