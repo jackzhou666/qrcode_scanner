@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/services.dart';
 
 class ScanHistoryPage extends StatefulWidget {
   const ScanHistoryPage({super.key});
@@ -17,6 +18,15 @@ class _ScanHistoryPageState extends State<ScanHistoryPage> {
     _box = Hive.box<String>('scan_history');
   }
 
+  void _copyToClipboard(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('内容已复制到剪贴板')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,15 +38,14 @@ class _ScanHistoryPageState extends State<ScanHistoryPage> {
           if (items.isEmpty) {
             return const Center(child: Text('暂无扫码记录'));
           }
-          return ListView.builder(
+          return ListView.separated(
             itemCount: items.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final item = items[index];
               return ListTile(
                 title: Text(item),
-                onTap: () {
-                  // 可扩展：点击复制或跳转
-                },
+                onLongPress: () => _copyToClipboard(item),
               );
             },
           );

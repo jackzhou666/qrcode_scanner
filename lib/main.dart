@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: '聚合扫码 V1.0'),
     );
   }
 }
@@ -135,21 +135,31 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: _scanQRCode,
-              child: const Text('扫描二维码'),
-            ),
-            const SizedBox(height: 20),
-            Text(
+      body: Stack(
+        children: [
+          Center(
+            child: Text(
               qrText == null ? '请扫描二维码' : '扫描结果: \n$qrText',
               textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Center(
+              child: ElevatedButton(
+                onPressed: _scanQRCode,
+                child: const Text('扫描二维码'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
