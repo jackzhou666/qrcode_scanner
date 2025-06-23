@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -59,12 +60,21 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
   void _onQRViewCreated(QRViewController controller) {
-    controller.scannedDataStream.listen((scanData) {
+    controller.scannedDataStream.listen((scanData) async {
       controller.pauseCamera();
+      print('扫码结果: ${scanData.code}');
       setState(() {
         qrText = scanData.code;
       });
       Navigator.of(context).pop();
+
+      final url = scanData.code;
+      if (url != null && (url.startsWith('http://') || url.startsWith('https://'))) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
     });
   }
 
