@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'api_keys.dart';
+import 'weather_info_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,125 +81,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _getLocationAndWeather();
   }
 
-  Future<void> _getLocationAndWeather() async {
-    setState(() {
-      _loadingWeather = true;
-    });
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _location = '定位未开启';
-          _weather = null;
-          _loadingWeather = false;
-        });
-        return;
-      }
-      // 权限处理增强
-      LocationPermission permission = await Geolocator.checkPermission();
-      print('初始定位权限: ' + permission.toString());
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        permission = await Geolocator.requestPermission();
-        print('请求后定位权限: ' + permission.toString());
-      }
-      if (permission == LocationPermission.denied) {
-        setState(() {
-          _location = '定位权限被拒绝，请在系统设置中开启定位权限';
-          _weather = null;
-          _loadingWeather = false;
-        });
-        return;
-      }
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _location = '定位权限永久被拒绝，请在系统设置中开启定位权限';
-          _weather = null;
-          _loadingWeather = false;
-        });
-        return;
-      }
-      print('准备获取经纬度...');
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 2),
-        );
-        print('高精度定位成功');
-      } on TimeoutException catch (e) {
-        print('高精度定位超时: ' + e.toString());
-      } catch (e) {
-        print('高精度定位失败: ' + e.toString());
-      }
-      if (position == null) {
-        try {
-          print('尝试低精度定位...');
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.low,
-            timeLimit: Duration(seconds: 2),
-          );
-          print('低精度定位成功');
-          setState(() {
-            _location = '（低精度）';
-          });
-        } on TimeoutException catch (e) {
-          print('低精度定位超时: ' + e.toString());
-        } catch (e) {
-          print('低精度定位失败: ' + e.toString());
-        }
-      }
-      if (position == null) {
-        setState(() {
-          _location = '无法获取定位信息';
-          _weather = null;
-        });
-        return;
-      }
-      double lat = position.latitude;
-      double lon = position.longitude;
-      print('获取到经纬度: ' + lat.toString() + ', ' + lon.toString());
-      // 逆地理编码获取城市名
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
-      String city = placemarks.isNotEmpty ? placemarks.first.locality ?? '' : '';
-      setState(() {
-        _location = (city.isNotEmpty ? city : '纬度: $lat, 经度: $lon') + (_location == '（低精度）' ? '（低精度）' : '');
-      });
-      // 获取天气（OpenWeatherMap，需替换为你的API key）
-      final url = 'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$openWeatherMapApiKey&units=metric&lang=zh_cn';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final desc = data['weather'][0]['description'];
-        final temp = data['main']['temp'];
-        setState(() {
-          _weather = '$desc, $temp°C';
-        });
-      } else {
-        setState(() {
-          _weather = '天气获取失败';
-        });
-      }
-    } on TimeoutException catch (e) {
-      print('定位超时: ' + e.toString());
-      setState(() {
-        _location = '定位超时，请检查定位服务或尝试重启App';
-        _weather = null;
-      });
-    } catch (e) {
-      print('定位/天气获取异常: ' + e.toString());
-      setState(() {
-        _location = '定位/天气获取失败: ' + e.toString();
-        _weather = null;
-      });
-    } finally {
-      setState(() {
-        _loadingWeather = false;
-      });
-    }
-  }
 
   Future<void> _saveScanHistory(String content) async {
     final box = Hive.box<String>('scan_history');
@@ -321,38 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (_loadingWeather)
-                Padding(
-                  padding: const EdgeInsets.only(top: 32.0, bottom: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 12),
-                      Text('获取位置和天气...'),
-                    ],
-                  ),
-                )
-              else if (_location != null && _weather != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 32.0, bottom: 16.0),
-                  child: Column(
-                    children: [
-                      Text('当前位置：$_location', style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 4),
-                      Text('天气：$_weather', style: const TextStyle(fontSize: 16)),
-                    ],
-                  ),
-                )
-              else if (_location != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 32.0, bottom: 16.0),
-                  child: Text('$_location', style: const TextStyle(fontSize: 16)),
-                ),
+              WeatherInfoWidget(),
               // 原有二维码信息显示
               Expanded(
                 child: Center(
