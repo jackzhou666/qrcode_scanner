@@ -73,9 +73,18 @@ class _MyHomePageState extends State<MyHomePage> {
       if (url != null && (url.startsWith('http://') || url.startsWith('https://'))) {
         await Future.delayed(const Duration(milliseconds: 300));
         if (context.mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => WebViewPage(url: url)),
-          );
+          final uri = Uri.parse(url);
+          // 智能判断：支付类链接直接外部浏览器打开
+          if (url.contains('pay.wps.cn')) {
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          } else {
+            // 其他网页用 WebView 打开
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => WebViewPage(url: url)),
+            );
+          }
         }
       }
     });
